@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AI 게임 포털 - 메뉴</title>
     <style>
-        /* CSS: 깔끔하고 현대적인 포털 디자인 */
         body {
             margin: 0;
             padding: 0;
@@ -34,7 +33,6 @@
             color: #4a4a4a;
         }
 
-        /* 드롭다운 스타일 */
         .select-box {
             width: 100%;
             padding: 12px;
@@ -43,14 +41,9 @@
             border-radius: 10px;
             outline: none;
             margin-bottom: 20px;
-            transition: border-color 0.3s;
         }
 
-        .select-box:focus {
-            border-color: #764ba2;
-        }
-
-        /* 실행 버튼 스타일 */
+        /* 실행 버튼 기본 스타일 */
         .btn-run {
             width: 100%;
             padding: 15px;
@@ -61,16 +54,20 @@
             border: none;
             border-radius: 10px;
             cursor: pointer;
-            transition: transform 0.2s, background-color 0.3s;
+            transition: all 0.3s;
         }
 
-        .btn-run:hover {
+        .btn-run:hover:not(:disabled) {
             background-color: #5a3782;
             transform: translateY(-2px);
         }
 
-        .btn-run:active {
-            transform: translateY(0);
+        /* 비활성화(disabled) 상태의 버튼 스타일 */
+        .btn-run:disabled {
+            background-color: #ccc; /* 회색으로 변경 */
+            cursor: not-allowed;    /* 마우스 커서 변경 */
+            transform: none;        /* 움직임 제거 */
+            opacity: 0.7;
         }
     </style>
 </head>
@@ -80,28 +77,38 @@
         <h1>🎮 AI Game Portal</h1>
         
         <select id="game-select" class="select-box">
-            <option value="">-- 게임을 선택하세요 --</option>
+            <option value="" selected>-- 게임을 선택하세요 --</option>
             <option value="./2048/index.html">2048 퍼즐</option>
-            <option value="./snake/index.html">지렁이 게임 (준비중)</option>
-            <option value="./flappy/index.html">플래피 버드 (준비중)</option>
+            <option value="./snake/index.html" data-ready="false">지렁이 게임 (준비중)</option>
+            <option value="./flappy/index.html" data-ready="false">플래피 버드 (준비중)</option>
         </select>
 
-        <button class="btn-run" onclick="launchGame()">게임 실행하기</button>
+        <button id="run-btn" class="btn-run" onclick="launchGame()" disabled>게임 실행하기</button>
     </div>
 
     <script>
-        // JS: 선택된 경로로 이동하는 로직
-        function launchGame() {
-            const selectElement = document.getElementById('game-select');
-            const selectedPath = selectElement.value;
+        const gameSelect = document.getElementById('game-select');
+        const runBtn = document.getElementById('run-btn');
 
-            if (selectedPath === "") {
-                alert("먼저 게임을 선택해 주세요!");
-                return;
+        // 드롭다운 값이 바뀔 때마다 실행되는 함수
+        gameSelect.addEventListener('change', function() {
+            const selectedOption = gameSelect.options[gameSelect.selectedIndex];
+            const isReady = selectedOption.getAttribute('data-ready') !== "false";
+            const hasValue = gameSelect.value !== "";
+
+            // 값이 있고(선택됨) + 준비된 게임인 경우만 버튼 활성화
+            if (hasValue && isReady) {
+                runBtn.disabled = false;
+            } else {
+                runBtn.disabled = true;
             }
+        });
 
-            // 선택한 경로로 페이지 이동
-            window.location.href = selectedPath;
+        function launchGame() {
+            const selectedPath = gameSelect.value;
+            if (selectedPath) {
+                window.location.href = selectedPath;
+            }
         }
     </script>
 </body>
