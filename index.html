@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI 게임 포털 - 메뉴</title>
+    <style>
+        /* CSS: 깔끔하고 현대적인 포털 디자인 */
+        body {
+            margin: 0;
+            padding: 0;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            font-family: 'Pretendard', sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            color: white;
+        }
+
+        .menu-card {
+            background: white;
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            text-align: center;
+            width: 350px;
+            color: #333;
+        }
+
+        h1 {
+            margin-bottom: 30px;
+            font-size: 24px;
+            color: #4a4a4a;
+        }
+
+        /* 드롭다운 스타일 */
+        .select-box {
+            width: 100%;
+            padding: 12px;
+            font-size: 16px;
+            border: 2px solid #ddd;
+            border-radius: 10px;
+            outline: none;
+            margin-bottom: 20px;
+            transition: border-color 0.3s;
+        }
+
+        .select-box:focus {
+            border-color: #764ba2;
+        }
+
+        /* 실행 버튼 스타일 */
+        .btn-run {
+            width: 100%;
+            padding: 15px;
+            font-size: 18px;
+            font-weight: bold;
+            color: white;
+            background-color: #764ba2;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: transform 0.2s, background-color 0.3s;
+        }
+
+        .btn-run:hover {
+            background-color: #5a3782;
+            transform: translateY(-2px);
+        }
+
+        .btn-run:active {
+            transform: translateY(0);
+        }
+    </style>
+</head>
+<body>
+
+    <div class="menu-card">
+        <h1>🎮 AI Game Portal</h1>
+        
+        <select id="game-select" class="select-box">
+            <option value="">-- 게임을 선택하세요 --</option>
+            <option value="./2048/index.html">2048 퍼즐</option>
+            <option value="./snake/index.html">지렁이 게임 (준비중)</option>
+            <option value="./flappy/index.html">플래피 버드 (준비중)</option>
+        </select>
+
+        <button class="btn-run" onclick="launchGame()">게임 실행하기</button>
+    </div>
+
+    <script>
+        // JS: 선택된 경로로 이동하는 로직
+        function launchGame() {
+            const selectElement = document.getElementById('game-select');
+            const selectedPath = selectElement.value;
+
+            if (selectedPath === "") {
+                alert("먼저 게임을 선택해 주세요!");
+                return;
+            }
+
+            // 선택한 경로로 페이지 이동
+            window.location.href = selectedPath;
+        }
+    </script>
+</body>
+</html>
