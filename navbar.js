@@ -25,7 +25,7 @@
     const navHTML = `
         <nav class="global-nav">
             <div class="nav-container">
-                <a href="${rootPath}menu.html" class="nav-logo">🏠 HOME</a>
+                <a href="${rootPath}" class="nav-logo">🏠 HOME</a>
                 <select id="common-nav-select" class="nav-select">
                     <option value="">다른 게임 선택</option>
                     <option value="${rootPath}2048/index.html">2048 퍼즐</option>
