@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>AI Game Portal - Flappy Bird</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            background-color: #70c5ce;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            font-family: 'Arial', sans-serif;
+        }
+
+        /* 점수판 디자인 */
+        .score-wrapper {
+            position: absolute;
+            top: 80px;
+            display: flex;
+            gap: 20px;
+            z-index: 10;
+        }
+
+        .score-box {
+            background-color: rgba(0, 0, 0, 0.3);
+            padding: 10px 20px;
+            border-radius: 8px;
+            text-align: center;
+            color: white;
+        }
+
+        canvas {
+            background-color: #70c5ce;
+            border: 4px solid #fff;
+            box-shadow: 0 0 20px rgba(0,0,0,0.2);
+            display: block;
+        }
+    </style>
+</head>
+<body>
+
+    <script src="../navbar.js"></script>
+
+    <div class="score-wrapper">
+        <div class="score-box">SCORE: <span id="score-val">0</span></div>
+        <div class="score-box">BEST: <span id="best-val">0</span></div>
+    </div>
+    
+    <canvas id="flappyCanvas" width="400" height="600"></canvas>
+
+    <script>
+        const canvas = document.getElementById("flappyCanvas");
+        const ctx = canvas.getContext("2d");
+        const scoreElement = document.getElementById("score-val");
+        const bestElement = document.getElementById("best-val");
+
+        // 게임 설정
+        let birdX = 50;
+        let birdY = 300;
+        let birdSize = 20;
+        let gravity = 0.25;      // 중력
+        let velocity = 0;        // 속도
+        let lift = -6;           // 점프 힘
+        let score = 0;
+        let bestScore = localStorage.getItem('flappy-best-score') || 0;
+        bestElement.innerText = bestScore;
+
+        let pipes = [];
+        let pipeWidth = 50;
+        let pipeGap = 150;       // 파이프 사이 간격
+        let frameCount = 0;
+        let gameLoop;
+
+        // 키 입력 처리 (스페이스바 또는 화면 클릭)
+        window.addEventListener("keydown", (e) => { if (e.code === "Space") velocity += lift; });
+        canvas.addEventListener("mousedown", () => { velocity += lift; });
+
+        function initGame() {
+            birdY = 300;
+            velocity = 0;
+            score = 0;
+            pipes = [];
+            frameCount = 0;
+            scoreElement.innerText = score;
+            if (gameLoop) cancelAnimationFrame(gameLoop);
+            gameLoop = requestAnimationFrame(draw);
+        }
+
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // 1. 새 물리 연산
+            velocity += gravity;
+            birdY += velocity;
+
+            // 2. 파이프 생성
+            if (frameCount % 100 === 0) {
+                let pipeHeight = Math.random() * (canvas.height / 2);
+                pipes.push({ x: canvas.width, top: pipeHeight });
+            }
+
+            // 3. 파이프 이동 및 그리기
+            ctx.fillStyle = "#2ecc71";
+            for (let i = pipes.length - 1; i >= 0; i--) {
+                pipes[i].x -= 3;
+
+                // 상단 파이프
+                ctx.fillRect(pipes[i].x, 0, pipeWidth, pipes[i].top);
+                // 하단 파이프
+                ctx.fillRect(pipes[i].x, pipes[i].top + pipeGap, pipeWidth, canvas.height);
+
+                // 점수 계산 (파이프를 통과했을 때)
+                if (pipes[i].x + pipeWidth === birdX) {
+                    score++;
+                    scoreElement.innerText = score;
+                }
+
+                // 충돌 감지
+                if (birdX + birdSize > pipes[i].x && birdX < pipes[i].x + pipeWidth) {
+                    if (birdY < pipes[i].top || birdY + birdSize > pipes[i].top + pipeGap) {
+                        gameOver();
+                        return;
+                    }
+                }
+
+                // 화면 밖 파이프 제거
+                if (pipes[i].x < -pipeWidth) pipes.splice(i, 1);
+            }
+
+            // 4. 새 그리기
+            ctx.fillStyle = "#f1c40f"; // 노란색 새
+            ctx.fillRect(birdX, birdY, birdSize, birdSize);
+
+            // 5. 바닥/천장 충돌
+            if (birdY + birdSize > canvas.height || birdY < 0) {
+                gameOver();
+                return;
+            }
+
+            frameCount++;
+            gameLoop = requestAnimationFrame(draw);
+        }
+
+        function gameOver() {
+            if (score > bestScore) {
+                bestScore = score;
+                localStorage.setItem('flappy-best-score', bestScore);
+                bestElement.innerText = bestScore;
+                alert("최고 기록 달성! 점수: " + score);
+            } else {
+                alert("게임 종료! 점수: " + score);
+            }
+            initGame();
+        }
+
+        initGame();
+    </script>
+</body>
+</html>
