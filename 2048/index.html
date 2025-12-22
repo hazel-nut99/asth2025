@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>AI와 함께 만든 2048 게임</title>
+    <style>
+        /* CSS: 게임의 디자인을 담당합니다. */
+        body {
+            background-color: #faf8ef;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            font-family: 'Clear Sans', 'Helvetica Neue', Arial, sans-serif;
+        }
+
+        #game-container {
+            width: 400px;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .score-container {
+            background-color: #bbada0;
+            padding: 10px 20px;
+            border-radius: 5px;
+            color: white;
+            font-weight: bold;
+            text-align: center;
+        }
+
+        /* 4x4 격자판 */
+        #grid-container {
+            width: 400px;
+            height: 400px;
+            background-color: #bbada0;
+            border-radius: 6px;
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            grid-template-rows: repeat(4, 1fr);
+            gap: 15px;
+            padding: 15px;
+            box-sizing: border-box;
+            position: relative;
+        }
+
+        /* 개별 타일 스타일 */
+        .tile {
+            width: 80px;
+            height: 80px;
+            background-color: rgba(238, 228, 218, 0.35);
+            border-radius: 3px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 35px;
+            font-weight: bold;
+            color: #776e65;
+        }
+
+        /* 숫자별 타일 색상 지정 */
+        .tile-2 { background-color: #eee4da; }
+        .tile-4 { background-color: #ede0c8; }
+        .tile-8 { background-color: #f2b179; color: white; }
+        .tile-16 { background-color: #f59563; color: white; }
+        .tile-32 { background-color: #f67c5f; color: white; }
+        .tile-64 { background-color: #f65e3b; color: white; }
+        .tile-128 { background-color: #edcf72; color: white; font-size: 30px; }
+        .tile-256 { background-color: #edcc61; color: white; font-size: 30px; }
+        .tile-512 { background-color: #edc850; color: white; font-size: 30px; }
+        .tile-1024 { background-color: #edc53f; color: white; font-size: 25px; }
+        .tile-2048 { background-color: #edc22e; color: white; font-size: 25px; }
+    </style>
+</head>
+<body>
+
+    <div id="game-container">
+        <div class="header">
+            <h1>2048</h1>
+            <div class="score-container">SCORE: <span id="score">0</span></div>
+        </div>
+        <div id="grid-container">
+            </div>
+    </div>
+
+    <script>
+        // JS: 게임의 로직을 담당합니다.
+        const gridDisplay = document.querySelector('#grid-container');
+        const scoreDisplay = document.querySelector('#score');
+        let board = []; // 4x4 데이터를 담을 2차원 배열
+        let score = 0;
+
+        // 1. 게임 시작: 4x4 보드를 생성하고 초기 타일 2개를 배치합니다.
+        function createBoard() {
+            for (let i = 0; i < 4; i++) {
+                let row = [];
+                for (let j = 0; j < 4; j++) {
+                    row.push(0);
+                }
+                board.push(row);
+            }
+            generateNewTile();
+            generateNewTile();
+            renderBoard();
+        }
+
+        // 2. 화면 그리기: board 배열의 숫자를 기반으로 HTML 요소를 업데이트합니다.
+        function renderBoard() {
+            gridDisplay.innerHTML = ''; // 기존 내용을 비움
+            for (let i = 0; i < 4; i++) {
+                for (let j = 0; j < 4; j++) {
+                    const tile = document.createElement('div');
+                    tile.classList.add('tile');
+                    if (board[i][j] !== 0) {
+                        tile.innerText = board[i][j];
+                        tile.classList.add('tile-' + board[i][j]);
+                    }
+                    gridDisplay.appendChild(tile);
+                }
+            }
+            scoreDisplay.innerText = score;
+        }
+
+        // 3. 랜덤 타일 생성: 빈 칸(0)인 위치를 찾아 2 또는 4를 넣습니다.
+        function generateNewTile() {
+            let emptyTiles = [];
+            for (let r = 0; r < 4; r++) {
+                for (let c = 0; c < 4; c++) {
+                    if (board[r][c] === 0) emptyTiles.push({r, c});
+                }
+            }
+            if (emptyTiles.length > 0) {
+                let randomLoc = emptyTiles[Math.floor(Math.random() * emptyTiles.length)];
+                board[randomLoc.r][randomLoc.c] = Math.random() > 0.1 ? 2 : 4;
+            }
+        }
+
+        // 4. 이동 로직: 한 줄(row)을 받아서 0을 제거하고 숫자를 합칩니다.
+        function slide(row) {
+            // [2, 0, 2, 2] -> [2, 2, 2] (0 제거)
+            let filteredRow = row.filter(num => num !== 0);
+            
+            // 숫자가 같으면 합치기: [2, 2, 2] -> [4, 0, 2]
+            for (let i = 0; i < filteredRow.length - 1; i++) {
+                if (filteredRow[i] === filteredRow[i+1]) {
+                    filteredRow[i] *= 2;
+                    score += filteredRow[i];
+                    filteredRow[i+1] = 0;
+                }
+            }
+            
+            // 다시 0 제거 후 4자리 맞추기: [4, 0, 2] -> [4, 2, 0, 0]
+            filteredRow = filteredRow.filter(num => num !== 0);
+            while (filteredRow.length < 4) {
+                filteredRow.push(0);
+            }
+            return filteredRow;
+        }
+
+        // 5. 방향 컨트롤러: 상하좌우 키 입력에 따라 배열을 회전시키거나 변환하여 slide 함수를 적용합니다.
+        function handleInput(e) {
+            let oldBoard = JSON.stringify(board);
+
+            if (e.key === 'ArrowLeft') {
+                for (let i = 0; i < 4; i++) board[i] = slide(board[i]);
+            } else if (e.key === 'ArrowRight') {
+                for (let i = 0; i < 4; i++) board[i] = slide(board[i].reverse()).reverse();
+            } else if (e.key === 'ArrowUp') {
+                for (let c = 0; c < 4; c++) {
+                    let column = [board[0][c], board[1][c], board[2][c], board[3][c]];
+                    column = slide(column);
+                    for (let r = 0; r < 4; r++) board[r][c] = column[r];
+                }
+            } else if (e.key === 'ArrowDown') {
+                for (let c = 0; c < 4; c++) {
+                    let column = [board[0][c], board[1][c], board[2][c], board[3][c]];
+                    column = slide(column.reverse()).reverse();
+                    for (let r = 0; r < 4; r++) board[r][c] = column[r];
+                }
+            }
+
+            // 움직임이 있었다면 새 타일을 생성
+            if (oldBoard !== JSON.stringify(board)) {
+                generateNewTile();
+                renderBoard();
+                checkGameOver();
+            }
+        }
+
+        // 6. 게임 종료 체크
+        function checkGameOver() {
+            let canMove = false;
+            for (let r = 0; r < 4; r++) {
+                for (let c = 0; c < 4; c++) {
+                    if (board[r][c] === 0) canMove = true;
+                    if (c < 3 && board[r][c] === board[r][c+1]) canMove = true;
+                    if (r < 3 && board[r][c] === board[r+1][c]) canMove = true;
+                }
+            }
+            if (!canMove) alert("게임 오버! 최종 점수: " + score);
+        }
+
+        // 이벤트 리스너 및 게임 시작
+        document.addEventListener('keyup', handleInput);
+        createBoard();
+
+    </script>
+</body>
+</html>
