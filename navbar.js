@@ -22,11 +22,11 @@
 
     // 2. HTML 구조 생성
     // 경로 설정을 위해 root 변수를 활용 (필요 시 수정 가능)
-    const rootPath = "/"; // 실제 서버나 로컬 환경에 맞춰 경로를 조정하세요.
+    const rootPath = "/asth2025"; // 실제 서버나 로컬 환경에 맞춰 경로를 조정하세요.
     const navHTML = `
         <nav class="global-nav">
             <div class="nav-container">
-                <a href="${rootPath}menu.html" class="nav-logo">🏠 HOME</a>
+                <a href="${rootPath}" class="nav-logo">🏠 HOME</a>
                 <select class="nav-select" onchange="if(this.value) location.href=this.value">
                     <option value="">다른 게임 선택</option>
                     <option value="${rootPath}2048/index.html">2048 퍼즐</option>
