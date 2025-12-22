@@ -105,6 +105,7 @@
             frameCount = 0;
             scoreElement.innerText = score;
             isGameStarted = false; // 시작 전 상태로 설정
+            isPassed = false; // 새 지나갔나
 
             if (gameLoop) cancelAnimationFrame(gameLoop);
             
@@ -145,21 +146,29 @@
             // 3. 파이프 이동 및 그리기
             ctx.fillStyle = "#2ecc71";
             for (let i = pipes.length - 1; i >= 0; i--) {
-                pipes[i].x -= 3;
+                pipes[i].x -= 3; // 파이프 이동 속도
+            
+                // 상단/하단 파이프 그리기
                 ctx.fillRect(pipes[i].x, 0, pipeWidth, pipes[i].top);
                 ctx.fillRect(pipes[i].x, pipes[i].top + pipeGap, pipeWidth, canvas.height);
-
-                if (pipes[i].x + pipeWidth === birdX) {
+            
+                // [수정된 점수 로직] 
+                // 새의 위치(birdX)가 파이프의 오른쪽 끝(pipes[i].x + pipeWidth)을 넘었는지 확인
+                if (!pipes[i].passed && birdX > pipes[i].x + pipeWidth) {
                     score++;
                     scoreElement.innerText = score;
+                    pipes[i].passed = true; // 중복 점수 획득 방지
                 }
-
+            
+                // 충돌 감지 (기존과 동일)
                 if (birdX + birdSize > pipes[i].x && birdX < pipes[i].x + pipeWidth) {
                     if (birdY < pipes[i].top || birdY + birdSize > pipes[i].top + pipeGap) {
                         gameOver();
                         return;
                     }
                 }
+            
+                // 화면 밖으로 나간 파이프 제거
                 if (pipes[i].x < -pipeWidth) pipes.splice(i, 1);
             }
 
