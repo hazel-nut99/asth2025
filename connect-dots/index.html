@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>AI Game Portal - Connect the Dots</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            background-color: #f0f8ff;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            font-family: 'Arial', sans-serif;
+        }
+
+        .game-header {
+            position: absolute;
+            top: 80px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+            z-index: 10;
+        }
+
+        .score-box {
+            background-color: rgba(0, 0, 0, 0.6);
+            padding: 10px 20px;
+            border-radius: 8px;
+            text-align: center;
+            color: white;
+            font-size: 1.2em;
+        }
+
+        .instructions {
+            color: #333;
+            font-size: 1.1em;
+            margin-bottom: 20px;
+        }
+
+        canvas {
+            background-color: #fff;
+            border: 4px solid #aaddff;
+            box-shadow: 0 0 20px rgba(0,0,0,0.1);
+            display: block;
+            cursor: pointer;
+        }
+
+        .game-controls {
+            margin-top: 20px;
+        }
+
+        button {
+            padding: 10px 20px;
+            font-size: 1em;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        button:hover {
+            background-color: #0056b3;
+        }
+    </style>
+</head>
+<body>
+
+    <script src="../navbar.js"></script>
+
+    <div class="game-header">
+        <div class="instructions">1번 점부터 차례대로 클릭하여 그림을 완성하세요!</div>
+        <div class="score-box">
+            경과 시간: <span id="time-val">0s</span> | 최고 기록: <span id="best-time-val">N/A</span>
+        </div>
+    </div>
+    
+    <canvas id="connectDotsCanvas" width="600" height="400"></canvas>
+
+    <div class="game-controls">
+        <button onclick="initGame()">새 게임 시작</button>
+    </div>
+
+    <script>
+        const canvas = document.getElementById("connectDotsCanvas");
+        const ctx = canvas.getContext("2d");
+        const timeElement = document.getElementById("time-val");
+        const bestTimeElement = document.getElementById("best-time-val");
+
+        // --- 1. 그림 데이터 정의 (여러 그림 준비) ---
+        const gameFigures = [
+            // 별 모양
+            [
+                {x: 300, y: 100, num: 1},
+                {x: 350, y: 250, num: 2},
+                {x: 200, y: 200, num: 3},
+                {x: 400, y: 200, num: 4},
+                {x: 250, y: 250, num: 5},
+                {x: 300, y: 100, num: 6} // 마지막 점은 시작점으로 돌아오게
+            ],
+            // 하트 모양
+            [
+                {x: 300, y: 300, num: 1},
+                {x: 200, y: 200, num: 2},
+                {x: 150, y: 150, num: 3},
+                {x: 150, y: 100, num: 4},
+                {x: 200, y: 50, num: 5},
+                {x: 300, y: 100, num: 6},
+                {x: 400, y: 50, num: 7},
+                {x: 450, y: 100, num: 8},
+                {x: 450, y: 150, num: 9},
+                {x: 400, y: 200, num: 10},
+                {x: 300, y: 300, num: 11}
+            ],
+            // 간단한 집 모양
+            [
+                {x: 200, y: 300, num: 1},
+                {x: 200, y: 200, num: 2},
+                {x: 300, y: 150, num: 3},
+                {x: 400, y: 200, num: 4},
+                {x: 400, y: 300, num: 5},
+                {x: 200, y: 300, num: 6}, // 밑변 완성
+                {x: 250, y: 300, num: 7}, // 문 시작
+                {x: 250, y: 250, num: 8},
+                {x: 350, y: 250, num: 9},
+                {x: 350, y: 300, num: 10}, // 문 완성
+                {x: 300, y: 150, num: 11} // 지붕 마무리 (선택 사항)
+            ]
+        ];
+
+        let currentPoints = [];     // 현재 게임에 사용될 점 배열
+        let currentDotIndex = 0;    // 다음으로 클릭해야 할 점의 인덱스
+        let clickedPoints = [];     // 사용자가 클릭한 점들
+        let startTime;              // 게임 시작 시간
+        let timerInterval;          // 타이머 인터벌 ID
+
+        // 로컬 스토리지에서 최고 기록 불러오기
+        let bestTime = localStorage.getItem('connect-dots-best-time');
+        if (bestTime) {
+            bestTimeElement.innerText = `${bestTime}s`;
+        } else {
+            bestTimeElement.innerText = 'N/A';
+        }
+
+        // 게임 초기화 및 시작
+// 게임 초기화 및 시작
+        function initGame() {
+            // 1. 랜덤으로 그림 선택
+            const randomIndex = Math.floor(Math.random() * gameFigures.length);
+            // 원본 데이터를 복사 (원본 보존을 위해 깊은 복사)
+            const selectedFigure = JSON.parse(JSON.stringify(gameFigures[randomIndex]));
+
+            // 2. [셔플 로직] 점들의 위치(x, y)만 무작위로 섞기
+            // 모든 점의 좌표 리스트를 추출
+            const allCoords = selectedFigure.map(p => ({ x: p.x, y: p.y }));
+            
+            // 좌표 리스트를 무작위로 섞음 (Fisher-Yates Shuffle)
+            for (let i = allCoords.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [allCoords[i], allCoords[j]] = [allCoords[j], allCoords[i]];
+            }
+
+            // 섞인 좌표를 다시 점 데이터에 할당 (번호 순서는 유지됨)
+            currentPoints = selectedFigure.map((p, i) => ({
+                ...p,
+                x: allCoords[i].x,
+                y: allCoords[i].y
+            }));
+
+            currentDotIndex = 0;
+            clickedPoints = [];
+            
+            if (timerInterval) clearInterval(timerInterval);
+            startTime = Date.now();
+            timeElement.innerText = '0s';
+
+            drawGame();
+        }
+
+        function drawGame() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // 1. 연결된 선 그리기
+            ctx.strokeStyle = '#3498db'; // 선 색상
+            ctx.lineWidth = 3;
+            ctx.setLineDash([]); // 실선
+            ctx.beginPath();
+            if (clickedPoints.length > 0) {
+                ctx.moveTo(clickedPoints[0].x, clickedPoints[0].y);
+                for (let i = 1; i < clickedPoints.length; i++) {
+                    ctx.lineTo(clickedPoints[i].x, clickedPoints[i].y);
+                }
+            }
+            ctx.stroke();
+
+            // 2. 점 그리기
+            currentPoints.forEach((point, index) => {
+                const isClicked = index < currentDotIndex;
+                
+                // 중복 좌표에서 현재 보여야 할 번호만 필터링 (지난 답변 로직 유지)
+                const isDuplicateFound = currentPoints.some((p, i) => 
+                    p.x === point.x && p.y === point.y && i < index && i >= currentDotIndex
+                );
+                if (isDuplicateFound) return;
+
+                // [요청 반영] 선택된 점과 대기 중인 점 색상 구분
+                if (isClicked) {
+                    ctx.fillStyle = '#e67e22'; // 선택된 점: 주황색
+                    ctx.strokeStyle = '#d35400';
+                } else {
+                    ctx.fillStyle = '#95a5a6'; // 대기 중인 점: 회색
+                    ctx.strokeStyle = '#7f8c8d';
+                }
+                
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.arc(point.x, point.y, 12, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.stroke();
+
+                // 점 번호 그리기
+                ctx.fillStyle = 'white';
+                ctx.font = 'bold 13px Arial';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(point.num, point.x, point.y);
+            });
+        }
+
+	// 마우스 클릭 이벤트 핸들러 수정
+	canvas.addEventListener('click', (event) => {
+	    // 모든 점을 이미 다 연결했다면 무시
+	    if (currentDotIndex >= currentPoints.length) return;
+
+	    const rect = canvas.getBoundingClientRect();
+	    const mouseX = event.clientX - rect.left;
+	    const mouseY = event.clientY - rect.top;
+
+	    // [핵심] 오직 '현재 순서'인 점(nextPoint)하고만 거리 비교를 합니다.
+	    // 이렇게 하면 같은 좌표에 다른 번호의 점이 있어도 현재 순번이 아니면 클릭되지 않습니다.
+	    const nextPoint = currentPoints[currentDotIndex];
+
+	    const distance = Math.sqrt(
+        	Math.pow(mouseX - nextPoint.x, 2) + Math.pow(mouseY - nextPoint.y, 2)
+	    );
+
+	    // 판정 반경을 15px로 설정 (모바일 고려 시 조금 더 크게 조절 가능)
+	    if (distance < 15) {
+	        clickedPoints.push(nextPoint);
+	        currentDotIndex++;
+
+	        // 첫 점 클릭 시 타이머 시작
+	        if (currentDotIndex === 1) {
+	            startTime = Date.now(); // 정확한 시작 시간 기록
+	            timerInterval = setInterval(updateTimer, 1000);
+	        }
+
+	        // 마지막 점까지 클릭 완료 시
+	        if (currentDotIndex === currentPoints.length) {
+	            handleGameComplete();
+	        }
+	    } else {
+	        // 오답 피드백 (선택 사항)
+	        console.log(`${currentDotIndex + 1}번 점을 정확히 클릭하세요.`);
+	    }
+	    drawGame();
+	});
+
+	// 게임 완료 처리 로직 분리
+	function handleGameComplete() {
+	    clearInterval(timerInterval);
+	    const finishTime = ((Date.now() - startTime) / 1000).toFixed(1);
+	    
+	    // 최고 기록 갱신 로직 (더 적은 시간이 좋은 기록)
+	    if (!bestTime || parseFloat(finishTime) < parseFloat(bestTime)) {
+	        bestTime = finishTime;
+	        localStorage.setItem('connect-dots-best-time', bestTime);
+        	bestTimeElement.innerText = `${bestTime}s`;
+	        alert(`축하합니다! 최고 기록 달성: ${finishTime}초`);
+	    } else {
+	        alert(`완성! 걸린 시간: ${finishTime}초`);
+	    }
+	}
+
+        // 타이머 업데이트 함수
+        function updateTimer() {
+            const elapsedTime = (Date.now() - startTime) / 1000;
+            timeElement.innerText = `${elapsedTime.toFixed(0)}s`; // 소수점 없이 초 표시
+        }
+
+        // 게임 시작
+        initGame();
+    </script>
+</body>
+</html>
