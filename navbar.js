@@ -30,7 +30,8 @@
                     <option value="">다른 게임 선택</option>
                     <option value="${rootPath}2048/index.html">2048 퍼즐</option>
                     <option value="${rootPath}snake/index.html">뱀 게임</option>
-                    <option value="${rootPath}flappy/index.html" data-ready="false">플래피 버드 (준비중)</option>
+                    <option value="${rootPath}flappy/index.html">플래피 버드</option>
+                    <option value="${rootPath}connect-dots/index.html" data-ready="false">점 잇기(준비중)</option>                    
                 </select>
             </div>
         </nav>
